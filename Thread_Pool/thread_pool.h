@@ -12,7 +12,7 @@
 //	\date	25/9/2019 3:55
 //
 //	\brief	A class which encapsulates a Pool of threads
-//			and dispatches to work upon an incoming callable object
+//			and dispatches work on demand - i.e. upon an incoming callable object
 //			Singleton move only class
 //=============================================================
 class ThreadPool final
@@ -32,10 +32,10 @@ class ThreadPool final
 	}
 public:
 	static ThreadPool& getInstance(
-		std::size_t nthreads = std::thread::hardware_concurrency(),
+		std::size_t nThreads = std::thread::hardware_concurrency(),
 		bool enabled = true )
 	{
-		static ThreadPool instance{nthreads, enabled};
+		static ThreadPool instance{nThreads, enabled};
 		return instance;
 	}
 	
@@ -46,6 +46,24 @@ public:
 
 	ThreadPool( ThreadPool const& ) = delete;
 	ThreadPool& operator=( const ThreadPool& rhs ) = delete;
+	ThreadPool( ThreadPool&& rhs ) noexcept
+		:
+		m_enabled{ std::move( rhs.m_enabled.load() ) },
+		m_pool{ std::move( rhs.m_pool ) },
+		m_tasks{ std::move( rhs.m_tasks ) }
+	{}
+	
+	ThreadPool& operator=( ThreadPool&& rhs ) noexcept
+	{
+		if ( this != &rhs )
+		{
+			ThreadPool temp( std::move( rhs ) );
+			m_enabled = std::move( temp.m_enabled.load() );
+			m_pool = std::move( temp.m_pool );
+			m_tasks = std::move( temp.m_tasks );
+		}
+		return *this;
+	}
 
 	void start()
 	{
@@ -72,8 +90,10 @@ public:
 		}
 	}
 	
-	template<typename Callback, typename... TArgs>
-	decltype(auto) enqueue( Callback&& f, TArgs&&... args )
+	template<typename Callback,
+		typename... TArgs>
+	decltype( auto ) enqueue( Callback&& f,
+		TArgs&&... args )
 	{
 		using ReturnType = std::invoke_result_t<Callback, TArgs...>;
 		using FuncType = ReturnType(TArgs...);
@@ -81,15 +101,17 @@ public:
 
 		if ( M_ENABLED )
 		{
-			std::shared_ptr<Wrapped> smartFunctionPointer = std::make_shared<Wrapped>(std::move(f));
+			std::shared_ptr<Wrapped> smartFunctionPointer =
+				std::make_shared<Wrapped>( std::move( f ) );
 			std::future<ReturnType> fu = smartFunctionPointer->get_future();
 
 			auto task = [
 				smartFunctionPointer = std::move( smartFunctionPointer ),
-					args = std::make_tuple( std::forward<TArgs>(args)... )
+					args = std::make_tuple( std::forward<TArgs>( args )... )
 					]() -> void
 			{// packaged_task wrapper function
-				std::apply( (*smartFunctionPointer), std::move( args ) );
+				std::apply( (*smartFunctionPointer),
+					std::move( args ) );
 				return;
 			};
 
@@ -102,19 +124,22 @@ public:
 		}
 		else
 		{	// TODO: rework exception handling
-			throw std::runtime_error("Cannot enqueue tasks in an inactive Thread Pool!");
+			throw std::runtime_error( "Cannot enqueue tasks in an inactive Thread Pool!" );
 		}
 	}
 
-	inline void enable() noexcept {
+	inline void enable() noexcept
+	{
 		m_enabled.store( true, std::memory_order_relaxed );
 	}
 
-	inline void disable() noexcept {
+	inline void disable() noexcept
+	{
 		m_enabled.store( false, std::memory_order_relaxed );
 	}
 
-	inline bool isEnabled() const noexcept {
+	inline bool isEnabled() const noexcept
+	{
 		return M_ENABLED;
 	}
 
@@ -125,14 +150,17 @@ public:
 	bool resize( int n )
 	{
 		if ( !isEnabled() )
+		{
 			return false;
-		if (n > 0)
-		{	// add threads
-
+		}
+		if ( n > 0 )
+		{
+			// add threads
 			return true;
 		}
 		else
-		{	// remove threads
+		{
+			// remove threads
 			n = -n;
 			{
 				std::scoped_lock<std::mutex> lg{ m_mu };
@@ -161,7 +189,7 @@ private:
 	std::queue<Task> m_tasks;
 	std::condition_variable m_cond;
 	std::mutex m_mu;
-
+private:
 	void run()
 	{
 		std::size_t nthreads = m_pool.capacity();
@@ -172,10 +200,14 @@ private:
 			{
 				std::unique_lock<std::mutex> lg{ m_mu };
 				while( m_tasks.empty() && M_ENABLED )
+				{
 					m_cond.wait( lg );
+				}
 
 				if ( !M_ENABLED )
+				{
 					break;
+				}
 
 				if ( !m_tasks.empty() )
 				{// there is a task available
@@ -197,4 +229,3 @@ private:
 	}
 
 };
-/////////////////////////////////////////////////////////////////////////

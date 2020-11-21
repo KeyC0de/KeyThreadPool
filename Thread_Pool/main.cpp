@@ -40,6 +40,8 @@ struct Member
 int vv() { std::puts("nothing"); return 0; }
 int vs(const std::string& str) { std::puts(str.c_str()); return 0; }
 
+
+
 int main()
 {
 	std::cout.sync_with_stdio(false);
@@ -63,7 +65,6 @@ int main()
 	
 	Member member{ 1 };
 	threadPool.enqueue(std::bind(&Member::sayCheese, member, 100));
-
 
 
 	auto f2 = threadPool.enqueue([]()
