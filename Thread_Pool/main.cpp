@@ -96,5 +96,6 @@ int main()
 		ex.what();
 	}
 
+	std::system( "pause" );
 	return EXIT_SUCCESS;
 }

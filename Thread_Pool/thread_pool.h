@@ -170,7 +170,7 @@ public:
 				}
 				else
 				{
-					for ( int i = m_pool.size() - 1; i >= m_pool.size() - n; i-- )
+					for ( size_t i = m_pool.size() - 1; i >= m_pool.size() - n; i-- )
 					{
 						if ( m_pool[i].joinable() )
 						{
