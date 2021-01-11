@@ -1,7 +1,8 @@
 #include <iostream>
 #include "thread_pool.h"
-
 #include <sstream>
+
+
 // Create some work to test the Thread Pool
 void spitId()
 {
@@ -44,16 +45,16 @@ int vs(const std::string& str) { std::puts(str.c_str()); return 0; }
 
 int main()
 {
-	std::cout.sync_with_stdio(false);
-	std::locale loc{ "en_US.utf-8" };
-	std::locale::global(loc);
+	std::cout.sync_with_stdio( false );
+	std::locale loc{"en_US.utf-8"};
+	std::locale::global( loc );
 
-	ThreadPool& threadPool = ThreadPool::getInstance(std::thread::hardware_concurrency(), true);
+	ThreadPool& threadPool = ThreadPool::getInstance( std::thread::hardware_concurrency(),
+		true );
 	threadPool.start();
-
-	threadPool.enqueue(spitId);
-	threadPool.enqueue(&spitId);
-	threadPool.enqueue(sayAndNoReturn);
+	threadPool.enqueue( spitId );
+	threadPool.enqueue( &spitId );
+	threadPool.enqueue( sayAndNoReturn );
 	
 	auto f1 = threadPool.enqueue([]() -> int
 	{
@@ -61,10 +62,13 @@ int main()
 		return 1;
 	});
 	
-	auto sayWhatRet = threadPool.enqueue(sayWhat, 100);
+	auto sayWhatRet = threadPool.enqueue( sayWhat,
+		100 );
 	
 	Member member{ 1 };
-	threadPool.enqueue(std::bind(&Member::sayCheese, member, 100));
+	threadPool.enqueue( std::bind( &Member::sayCheese,
+		member,
+		100 ) );
 
 
 	auto f2 = threadPool.enqueue([]()
@@ -74,10 +78,11 @@ int main()
 	});
 	auto f3 = threadPool.enqueue([]()
 	{
-		return sayWhat(100);
+		return sayWhat( 100 );
 	});
 
-	auto sayWhatRet2 = threadPool.enqueue(std::bind(&sayWhat,11000));
+	auto sayWhatRet2 = threadPool.enqueue( std::bind( &sayWhat,
+		11000 ) );
 
 	//threadPool.enqueue(std::function<void(int)>{Member{}.sayCheese(100)});
 
@@ -91,7 +96,7 @@ int main()
 		std::cout << sayWhatRet.get()  << '\n';
 		std::cout << sayWhatRet2.get() << '\n';
 	}
-	catch (const std::exception& ex)
+	catch ( const std::exception& ex )
 	{
 		ex.what();
 	}

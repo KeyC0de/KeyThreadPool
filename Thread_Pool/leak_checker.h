@@ -4,21 +4,32 @@
 #	define _CRTDBG_MAP_ALLOC
 #	define _CRTDBG_MAP_ALLOC_NEW
 #	include <crtdbg.h>
-#	include <assert.h>
-#endif
+#	include "assertions.h"
+#	include "winner.h"
+
+#ifndef TRUE
+#define TRUE 1
+#endif // !TRUE
+
+
+namespace debugLeak
+{
 
 bool anyMemoryLeaks()
 {
 	// confirms integrity of memory blocks allocated by debug heap
-	assert(_CrtCheckMemory());
-	if (_CrtDumpMemoryLeaks())
+	ASSERT( _CrtCheckMemory() == TRUE,
+		"_CrtCheckMemory() assertion failed\n" );
+	if ( _CrtDumpMemoryLeaks() )
 	{
-		//std::cout << "Memory leaks!\n";
 		return true;
 	}
 	else
 	{
-		//std::cout << "No leaks\n";
 		return false;
 	}
 }
+
+};// namespace debugLeak
+
+#endif
