@@ -123,12 +123,12 @@
     <ClCompile Include="leak_checker.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="thread_pool.cpp" />
-    <ClCompile Include="thread_pool.h">
+    <ClInclude Include="thread_pool.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
       </ExcludedFromBuild>
-    </ClCompile>
+    </ClInclude>
     <ClCompile Include="thread_pool_alt.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>

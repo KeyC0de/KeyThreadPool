@@ -1,6 +1,6 @@
 #include <iostream>
-#include "thread_pool.h"
 #include <sstream>
+#include "thread_pool.h"
 
 
 // Create some work to test the Thread Pool
