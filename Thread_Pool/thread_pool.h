@@ -2,6 +2,7 @@
 
 #include <future>
 #include <queue>
+#include <memory>
 
 #define M_ENABLED m_enabled.load( std::memory_order_relaxed )
 
@@ -14,7 +15,7 @@
 //
 //	\brief	A class which encapsulates a Pool of threads
 //			and dispatches work on demand - i.e. upon an incoming callable object
-//			Singleton move only class
+//			Singleton, move only class
 //=============================================================
 class ThreadPool final
 {
@@ -37,6 +38,10 @@ public:
 	ThreadPool( ThreadPool&& rhs ) noexcept;
 	ThreadPool& operator=( ThreadPool&& rhs ) noexcept;
 
+	//===================================================
+	//	\function	start
+	//	\brief  calls run
+	//	\date	25/9/2019 12:20
 	void start();
 	void stop() noexcept;
 	
@@ -58,14 +63,14 @@ public:
 				smartFunctionPointer = std::move( smartFunctionPointer ),
 					args = std::make_tuple( std::forward<TArgs>( args )... )
 					]() -> void
-			{// packaged_task wrapper function
-				std::apply( (*smartFunctionPointer),
+			{
+				std::apply( *smartFunctionPointer,
 					std::move( args ) );
 				return;
 			};
 
 			{
-				std::scoped_lock<std::mutex> lg{m_mu};
+				std::lock_guard<std::mutex> lg{m_mu};
 				m_tasks.emplace( std::move( task ) );
 			}
 			m_cond.notify_one();

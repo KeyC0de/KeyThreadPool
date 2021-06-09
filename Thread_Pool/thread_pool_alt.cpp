@@ -105,7 +105,7 @@ public:
 			};
 
 			{
-				std::scoped_lock<std::mutex> lg{ m_mu };
+				std::lock_guard<std::mutex> lg{ m_mu };
 				m_tasks.emplace(std::move(myTask));
 			}
 			m_cond.notify_one();

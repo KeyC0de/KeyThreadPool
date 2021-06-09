@@ -56,7 +56,7 @@ void ThreadPool::start()
 void ThreadPool::stop() noexcept
 {
 	if ( M_ENABLED )
-	{// if already running
+	{
 		m_enabled.store( false, std::memory_order_relaxed );
 		m_cond.notify_all();
 		for ( auto& t : m_pool )
@@ -104,14 +104,14 @@ bool ThreadPool::resize( int n )
 		// remove threads
 		n = -n;
 		{
-			std::scoped_lock<std::mutex> lg{ m_mu };
+			std::lock_guard<std::mutex> lg{ m_mu };
 			if ( m_pool.size() - n < 0 )
 			{
 				stop();
 			}
 			else
 			{
-				for ( size_t i = m_pool.size() - 1; i >= m_pool.size() - n; i-- )
+				for ( size_t i = m_pool.size() - 1; i >= m_pool.size() - n; --i )
 				{
 					if ( m_pool[i].joinable() )
 					{
@@ -128,7 +128,7 @@ void ThreadPool::run()
 {
 	std::size_t nthreads = m_pool.capacity();
 
-	auto f = [this] ()
+	auto threadFun = [this] ()
 	{
 		while( true )
 		{
@@ -150,14 +150,12 @@ void ThreadPool::run()
 				lg.unlock();
 				task();
 			}
-		}// while threadPool is enabled
-		//return;
-	};// thread function
+		}// thread sleeps forever until there's a task available
+	};
 
 	// place threads in the pool
-	// and assign them tasks
 	for( std::size_t ti = 0; ti < nthreads; ++ti )
 	{
-		m_pool.emplace_back( std::thread{ std::move(f) } );// launch thread
+		m_pool.emplace_back( std::thread{std::move(threadFun)} );
 	}
 }
