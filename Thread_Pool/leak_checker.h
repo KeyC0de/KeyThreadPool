@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef _DEBUG
+#if defined _DEBUG && !defined NDEBUG
 #	define _CRTDBG_MAP_ALLOC
 #	define _CRTDBG_MAP_ALLOC_NEW
 #	include <crtdbg.h>

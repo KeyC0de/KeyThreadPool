@@ -19,7 +19,13 @@
 class ThreadPool final
 {
 	using Task = std::function<void()>;
-
+	
+	std::atomic<bool> m_enabled;
+	std::vector<std::thread> m_pool;
+	std::queue<Task> m_tasks;
+	std::condition_variable m_cond;
+	std::mutex m_mu;
+private:
 	explicit ThreadPool( std::size_t nthreads, bool enabled );
 public:
 	static ThreadPool& getInstance( std::size_t nThreads
@@ -79,12 +85,6 @@ public:
 	//	\brief  adds # or subtracts -# threads to the ThreadPool
 	//	\date	25/9/2019 4:00
 	bool resize( int n );
-private:
-	std::atomic<bool> m_enabled;
-	std::vector<std::thread> m_pool;
-	std::queue<Task> m_tasks;
-	std::condition_variable m_cond;
-	std::mutex m_mu;
 private:
 	void run();
 };

@@ -1,4 +1,4 @@
-#if defined(_DEBUG) || defined(DEBUG) || defined(debug) || defined(_debug)
+#if defined _DEBUG && !defined NDEBUG
 
 #	include <iostream>
 #	include "leak_checker.h"

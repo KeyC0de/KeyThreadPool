@@ -2,20 +2,10 @@
 #include "thread_pool.h"
 
 
-//============================================================
-//	\class	ThreadPool
-//
-//	\author	KeyC0de
-//	\date	25/9/2019 3:55
-//
-//	\brief	A class which encapsulates a Pool of threads
-//			and dispatches work on demand - i.e. upon an incoming callable object
-//			Singleton move only class
-//=============================================================
 ThreadPool::ThreadPool( std::size_t nthreads,
 	bool enabled )
 	:
-	m_enabled{ enabled }
+	m_enabled{enabled}
 {
 	m_pool.reserve( nthreads );
 	if ( enabled )
@@ -38,19 +28,18 @@ ThreadPool::~ThreadPool() noexcept
 
 ThreadPool::ThreadPool( ThreadPool&& rhs ) noexcept
 	:
-	m_enabled{ std::move( rhs.m_enabled.load() ) },
-	m_pool{ std::move( rhs.m_pool ) },
-	m_tasks{ std::move( rhs.m_tasks ) }
+	m_enabled{std::move( rhs.m_enabled.load() )},
+	m_pool{std::move( rhs.m_pool )},
+	m_tasks{std::move( rhs.m_tasks )}
 {}
 
 ThreadPool& ThreadPool::operator=( ThreadPool&& rhs ) noexcept
 {
 	if ( this != &rhs )
 	{
-		ThreadPool temp( std::move( rhs ) );
-		m_enabled = std::move( temp.m_enabled.load() );
-		m_pool = std::move( temp.m_pool );
-		m_tasks = std::move( temp.m_tasks );
+		m_enabled = std::move( rhs.m_enabled.load() );
+		m_pool = std::move( rhs.m_pool );
+		m_tasks = std::move( rhs.m_tasks );
 	}
 	return *this;
 }
