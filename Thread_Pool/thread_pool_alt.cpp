@@ -34,7 +34,7 @@ LeakChecker leakChecker{};
 /// \brief A class which encapsulates a Pool of threads and dispatches to work upon an incoming callable object
 /// \brief This version demands functions with arguments to be passed through the facilities of std::bind
 ///======================================================================
-#define M_ENABLED m_enabled.load(std::memory_order_relaxed)
+#define M_ENABLED m_bEnabled.load(std::memory_order_relaxed)
 
 class ThreadPool final
 {
@@ -42,7 +42,7 @@ class ThreadPool final
 public:
 	explicit ThreadPool(std::size_t nthreads = std::thread::hardware_concurrency(),
 		bool enabled = true)
-		: m_enabled{ enabled }
+		: m_bEnabled{ enabled }
 	{
 		m_pool.reserve(nthreads);
 		if (enabled)
@@ -63,7 +63,7 @@ public:
 	{
 		if (!M_ENABLED)
 		{
-			m_enabled.store(true, std::memory_order_relaxed);
+			m_bEnabled.store(true, std::memory_order_relaxed);
 			run();
 		}
 	}
@@ -72,7 +72,7 @@ public:
 	{
 		if (M_ENABLED)
 		{// if already running
-			m_enabled.store(false, std::memory_order_relaxed);
+			m_bEnabled.store(false, std::memory_order_relaxed);
 			m_cond.notify_all();
 			for (auto& t : m_pool)
 			{
@@ -118,11 +118,11 @@ public:
 	}
 
 	inline void enable() noexcept {
-		m_enabled.store(true, std::memory_order_relaxed);
+		m_bEnabled.store(true, std::memory_order_relaxed);
 	}
 
 	inline void disable() noexcept {
-		m_enabled.store(false, std::memory_order_relaxed);
+		m_bEnabled.store(false, std::memory_order_relaxed);
 	}
 
 	inline bool isEnabled() const noexcept {
@@ -130,7 +130,7 @@ public:
 	}
 
 private:
-	std::atomic<bool> m_enabled;
+	std::atomic<bool> m_bEnabled;
 	std::vector<std::thread> m_pool;
 	std::queue<Task> m_tasks;
 	std::condition_variable m_cond;

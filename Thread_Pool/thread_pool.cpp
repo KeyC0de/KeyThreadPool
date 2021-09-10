@@ -3,12 +3,12 @@
 
 
 ThreadPool::ThreadPool( std::size_t nthreads,
-	bool enabled )
+	bool bStart )
 	:
-	m_enabled{enabled}
+	m_bEnabled{bStart}
 {
 	m_pool.reserve( nthreads );
-	if ( enabled )
+	if ( bStart )
 	{
 		run();
 	}
@@ -28,19 +28,18 @@ ThreadPool::~ThreadPool() noexcept
 
 ThreadPool::ThreadPool( ThreadPool&& rhs ) noexcept
 	:
-	m_enabled{std::move( rhs.m_enabled.load() )},
+	m_bEnabled{std::move( rhs.m_bEnabled.load( std::memory_order_relaxed ) )},
 	m_pool{std::move( rhs.m_pool )},
 	m_tasks{std::move( rhs.m_tasks )}
-{}
+{
+
+}
 
 ThreadPool& ThreadPool::operator=( ThreadPool&& rhs ) noexcept
 {
-	if ( this != &rhs )
-	{
-		m_enabled = std::move( rhs.m_enabled.load() );
-		m_pool = std::move( rhs.m_pool );
-		m_tasks = std::move( rhs.m_tasks );
-	}
+	m_bEnabled.store( rhs.m_bEnabled.load( std::memory_order_relaxed ) );
+	std::swap( m_pool, rhs.m_pool );
+	std::swap( m_tasks, rhs.m_tasks );
 	return *this;
 }
 
@@ -48,7 +47,7 @@ void ThreadPool::start()
 {
 	if ( !M_ENABLED )
 	{
-		m_enabled.store( true, std::memory_order_relaxed );
+		m_bEnabled.store( true, std::memory_order_relaxed );
 		run();
 	}
 }
@@ -57,7 +56,7 @@ void ThreadPool::stop() noexcept
 {
 	if ( M_ENABLED )
 	{
-		m_enabled.store( false, std::memory_order_relaxed );
+		m_bEnabled.store( false, std::memory_order_relaxed );
 		m_cond.notify_all();
 		for ( auto& t : m_pool )
 		{
@@ -71,12 +70,12 @@ void ThreadPool::stop() noexcept
 
 void ThreadPool::enable() noexcept
 {
-	m_enabled.store( true, std::memory_order_relaxed );
+	m_bEnabled.store( true, std::memory_order_relaxed );
 }
 
 void ThreadPool::disable() noexcept
 {
-	m_enabled.store( false, std::memory_order_relaxed );
+	m_bEnabled.store( false, std::memory_order_relaxed );
 }
 
 bool ThreadPool::isEnabled() const noexcept
@@ -84,10 +83,6 @@ bool ThreadPool::isEnabled() const noexcept
 	return M_ENABLED;
 }
 
-//===================================================
-//	\function	resize
-//	\brief  adds # or subtracts -# threads to the ThreadPool
-//	\date	25/9/2019 4:00
 bool ThreadPool::resize( int n )
 {
 	if ( !isEnabled() )
@@ -96,7 +91,7 @@ bool ThreadPool::resize( int n )
 	}
 	if ( n > 0 )
 	{
-		// add threads
+		// TODO: add threads
 		return true;
 	}
 	else
@@ -128,14 +123,15 @@ void ThreadPool::run()
 {
 	std::size_t nthreads = m_pool.capacity();
 
-	auto threadFun = [this] ()
+	auto threadMain = [this] ()
 	{
+		// thread sleeps forever until there's a task available
 		while( true )
 		{
-			std::unique_lock<std::mutex> lg{ m_mu };
+			std::unique_lock<std::mutex> ul{m_mu};
 			while( m_tasks.empty() && M_ENABLED )
 			{
-				m_cond.wait( lg );
+				m_cond.wait( ul );
 			}
 
 			if ( !M_ENABLED )
@@ -144,18 +140,17 @@ void ThreadPool::run()
 			}
 
 			if ( !m_tasks.empty() )
-			{// there is a task available
+			{
 				Task task = std::move( m_tasks.front() );
 				m_tasks.pop();
-				lg.unlock();
+				ul.unlock();
 				task();
 			}
-		}// thread sleeps forever until there's a task available
+		}
 	};
 
-	// place threads in the pool
 	for( std::size_t ti = 0; ti < nthreads; ++ti )
 	{
-		m_pool.emplace_back( std::thread{std::move(threadFun)} );
+		m_pool.emplace_back( std::thread{std::move(threadMain)} );
 	}
 }

@@ -1,6 +1,9 @@
 #include <iostream>
 #include <sstream>
 #include "thread_pool.h"
+#if defined _DEBUG && !defined NDEBUG
+#	include <vld.h>
+#endif
 
 
 // Create some work to test the Thread Pool
@@ -46,12 +49,8 @@ int vs(const std::string& str) { std::puts(str.c_str()); return 0; }
 int main()
 {
 	std::cout.sync_with_stdio( false );
-	std::locale loc{"en_US.utf-8"};
-	std::locale::global( loc );
 
-	ThreadPool& threadPool = ThreadPool::getInstance( std::thread::hardware_concurrency(),
-		true );
-	threadPool.start();
+	ThreadPool& threadPool = ThreadPool::getInstance( std::thread::hardware_concurrency() );
 	threadPool.enqueue( spitId );
 	threadPool.enqueue( &spitId );
 	threadPool.enqueue( sayAndNoReturn );

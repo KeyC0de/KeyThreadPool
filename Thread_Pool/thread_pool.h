@@ -4,7 +4,7 @@
 #include <queue>
 #include <memory>
 
-#define M_ENABLED m_enabled.load( std::memory_order_relaxed )
+#define M_ENABLED m_bEnabled.load( std::memory_order_relaxed )
 
 
 //============================================================
@@ -21,13 +21,13 @@ class ThreadPool final
 {
 	using Task = std::function<void()>;
 	
-	std::atomic<bool> m_enabled;
+	std::atomic<bool> m_bEnabled;
 	std::vector<std::thread> m_pool;
 	std::queue<Task> m_tasks;
 	std::condition_variable m_cond;
 	std::mutex m_mu;
 private:
-	explicit ThreadPool( std::size_t nthreads, bool enabled );
+	explicit ThreadPool( std::size_t nthreads, bool bStart = true );
 public:
 	static ThreadPool& getInstance( std::size_t nThreads
 		= std::thread::hardware_concurrency(), bool enabled = true );
@@ -59,10 +59,9 @@ public:
 				std::make_shared<Wrapped>( std::move( f ) );
 			std::future<ReturnType> fu = smartFunctionPointer->get_future();
 
-			auto task = [
-				smartFunctionPointer = std::move( smartFunctionPointer ),
+			auto task = [smartFunctionPointer = std::move( smartFunctionPointer ),
 					args = std::make_tuple( std::forward<TArgs>( args )... )
-					]() -> void
+				]() -> void
 			{
 				std::apply( *smartFunctionPointer,
 					std::move( args ) );
@@ -77,8 +76,9 @@ public:
 			return fu;
 		}
 		else
-		{	// TODO: rework exception handling
-			throw std::runtime_error( "Cannot enqueue tasks in an inactive Thread Pool!" );
+		{
+			// TODO: rework exception handling
+			throw std::runtime_error{"Cannot enqueue tasks in an inactive Thread Pool!"};
 		}
 	}
 
