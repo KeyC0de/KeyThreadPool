@@ -13,8 +13,9 @@
 //	\author	KeyC0de
 //	\date	25/9/2019 3:55
 //
-//	\brief	A class which encapsulates a Pool of threads
-//			and dispatches work on demand - i.e. upon an incoming callable object
+//	\brief	A class which encapsulates a Queue of Tasks & a Pool of threads
+//				and dispatches work on demand - ie. upon an incoming Task - callable object -
+//				a thread is dispatched to execute it
 //			Singleton, move only class
 //=============================================================
 class ThreadPool final
@@ -28,23 +29,25 @@ class ThreadPool final
 	std::mutex m_mu;
 private:
 	explicit ThreadPool( std::size_t nthreads, bool bStart = true );
-public:
-	static ThreadPool& getInstance( std::size_t nThreads
-		= std::thread::hardware_concurrency(), bool enabled = true );
-	
+public:	
 	~ThreadPool() noexcept;
 	ThreadPool( ThreadPool const& ) = delete;
 	ThreadPool& operator=( const ThreadPool& rhs ) = delete;
 	ThreadPool( ThreadPool&& rhs ) noexcept;
 	ThreadPool& operator=( ThreadPool&& rhs ) noexcept;
 
+	static ThreadPool& getInstance( std::size_t nThreads
+		= std::thread::hardware_concurrency(), bool bEnabled = true );
 	//===================================================
 	//	\function	start
 	//	\brief  calls run
 	//	\date	25/9/2019 12:20
 	void start();
 	void stop() noexcept;
-	
+	void enable() noexcept;
+	void disable() noexcept;
+	bool isEnabled() const noexcept;
+
 	template<typename Callback, typename... TArgs>
 	decltype( auto ) enqueue( Callback&& f,
 		TArgs&&... args )
@@ -60,8 +63,7 @@ public:
 			std::future<ReturnType> fu = smartFunctionPointer->get_future();
 
 			auto task = [smartFunctionPointer = std::move( smartFunctionPointer ),
-					args = std::make_tuple( std::forward<TArgs>( args )... )
-				]() -> void
+					args = std::make_tuple( std::forward<TArgs>( args )... )] () -> void
 			{
 				std::apply( *smartFunctionPointer,
 					std::move( args ) );
@@ -78,13 +80,9 @@ public:
 		else
 		{
 			// TODO: rework exception handling
-			throw std::runtime_error{"Cannot enqueue tasks in an inactive Thread Pool!"};
+			throw std::exception{"Cannot enqueue tasks in an inactive Thread Pool!"};
 		}
 	}
-
-	void enable() noexcept;
-	void disable() noexcept;
-	bool isEnabled() const noexcept;
 	//===================================================
 	//	\function	resize
 	//	\brief  adds # or subtracts -# threads to the ThreadPool

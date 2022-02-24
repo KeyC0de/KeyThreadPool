@@ -2,7 +2,8 @@
 #include <sstream>
 #include "thread_pool.h"
 #if defined _DEBUG && !defined NDEBUG
-#	include <vld.h>
+#	pragma comment( lib, "C:/Program Files (x86)/Visual Leak Detector/lib/Win64/vld.lib" )
+#	include <C:/Program Files (x86)/Visual Leak Detector/include/vld.h>
 #endif
 
 
@@ -100,6 +101,8 @@ int main()
 		ex.what();
 	}
 
-	std::system( "pause" );
+#if defined _DEBUG && !defined NDEBUG
+	while ( !getchar() );
+#endif
 	return EXIT_SUCCESS;
 }

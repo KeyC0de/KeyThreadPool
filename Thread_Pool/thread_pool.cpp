@@ -15,9 +15,9 @@ ThreadPool::ThreadPool( std::size_t nthreads,
 }
 
 ThreadPool& ThreadPool::getInstance( std::size_t nThreads,
-	bool enabled )
+	bool bEnabled )
 {
-	static ThreadPool instance{nThreads, enabled};
+	static ThreadPool instance{nThreads, bEnabled};
 	return instance;
 }
 
@@ -47,7 +47,8 @@ void ThreadPool::start()
 {
 	if ( !M_ENABLED )
 	{
-		m_bEnabled.store( true, std::memory_order_relaxed );
+		m_bEnabled.store( true,
+			std::memory_order_relaxed );
 		run();
 	}
 }
@@ -56,7 +57,8 @@ void ThreadPool::stop() noexcept
 {
 	if ( M_ENABLED )
 	{
-		m_bEnabled.store( false, std::memory_order_relaxed );
+		m_bEnabled.store( false,
+			std::memory_order_relaxed );
 		m_cond.notify_all();
 		for ( auto& t : m_pool )
 		{
@@ -70,12 +72,14 @@ void ThreadPool::stop() noexcept
 
 void ThreadPool::enable() noexcept
 {
-	m_bEnabled.store( true, std::memory_order_relaxed );
+	m_bEnabled.store( true,
+		std::memory_order_relaxed );
 }
 
 void ThreadPool::disable() noexcept
 {
-	m_bEnabled.store( false, std::memory_order_relaxed );
+	m_bEnabled.store( false,
+		std::memory_order_relaxed );
 }
 
 bool ThreadPool::isEnabled() const noexcept
@@ -99,7 +103,7 @@ bool ThreadPool::resize( int n )
 		// remove threads
 		n = -n;
 		{
-			std::lock_guard<std::mutex> lg{ m_mu };
+			std::lock_guard<std::mutex> lg{m_mu};
 			if ( m_pool.size() - n < 0 )
 			{
 				stop();
@@ -151,6 +155,6 @@ void ThreadPool::run()
 
 	for( std::size_t ti = 0; ti < nthreads; ++ti )
 	{
-		m_pool.emplace_back( std::thread{std::move(threadMain)} );
+		m_pool.emplace_back( std::thread{std::move( threadMain )} );
 	}
 }
